@@ -50,8 +50,9 @@
 </main>
 
 <script>
+// ▼ 본인의 GAS 웹 앱 URL로 교체 (/exec로 끝나야 함)
 const API_URL = 'https://script.google.com/macros/s/AKfycbyvNvNmTi2ZAECH3hrwNVsRZkIbIgF-HAA7GE3RcQjmGTSe4l15HytFD5qBBkd7kaha/exec';
-const POLL_MS = 3000;
+const POLL_MS = 3000; // 3초마다 갱신
 
 const $ = id => document.getElementById(id);
 const list = $('list');
