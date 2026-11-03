@@ -16,7 +16,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // 공공데이터 API 설정 (Decoding 인증키 입력)
-const API_KEY = "YOUR_PUBLIC_DATA_API_KEY"; 
+const API_KEY = "8df9681b1748b09a3badc6afff5e72bf6fba7f96507b697945782d3dcf7c4041"; 
 const API_URL = "https://apis.data.go.kr/B551011/KorService1/areaBasedList1";
 
 const selectEl = document.getElementById('areaCodeSelect');
