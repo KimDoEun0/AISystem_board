@@ -5,6 +5,7 @@ import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/fireb
 const firebaseConfig = {
   apiKey: "AIzaSyAcpMxtDgfZknnaF6UcHJD6PFoQj1iskYc",
   authDomain: "aisystem-myproject.firebaseapp.com",
+  databaseURL: "https://aisystem-myproject-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "aisystem-myproject",
   storageBucket: "aisystem-myproject.firebasestorage.app",
   messagingSenderId: "932636835234",
