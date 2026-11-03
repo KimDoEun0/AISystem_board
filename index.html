@@ -1,92 +1,150 @@
-<script>
-  // ⚠️ 본인의 Google Apps Script 웹 앱 URL을 넣으세요.
-  const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyvNvNmTi2ZAECH3hrwNVsRZkIbIgF-HAA7GE3RcQjmGTSe4l15HytFD5qBBkd7kaha/exec';
-
-  window.onload = function() {
-    loadMessages();
-  };
-
-  // 1. 방명록 목록 불러오기 (GET)
-  async function loadMessages() {
-    const loading = document.getElementById('loading');
-    const listDiv = document.getElementById('messageList');
-    if (loading) loading.style.display = 'block';
-
-    try {
-      const response = await fetch(GAS_WEB_APP_URL, { redirect: "follow" });
-      const result = await response.json();
-
-      if (loading) loading.style.display = 'none';
-      listDiv.innerHTML = '';
-
-      if (result.status === 'success' && result.data && result.data.length > 0) {
-        result.data.forEach(item => {
-          const div = document.createElement('div');
-          div.className = 'msg-item';
-          div.innerHTML = `
-            <div class="msg-header">
-              <span class="msg-name">${escapeHtml(item.name)}</span>
-              <span class="msg-date">${escapeHtml(item.date)}</span>
-            </div>
-            <div class="msg-body">${escapeHtml(item.message)}</div>
-          `;
-          listDiv.appendChild(div);
-        });
-      } else {
-        listDiv.innerHTML = '<p style="text-align:center; color:#adb5bd;">작성된 방명록이 없습니다.</p>';
-      }
-    } catch (err) {
-      console.error("목록 불러오기 오류:", err);
-      if (loading) loading.innerText = '목록을 불러오는 중 오류가 발생했습니다.';
-    }
-  }
-
-  // 2. 방명록 등록 제출 (POST)
-  async function handleFormSubmit(event) {
-    event.preventDefault();
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>실시간 웹 방명록</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
+    body { max-width: 600px; margin: 40px auto; padding: 0 20px; background-color: #f8f9fa; }
+    h2 { color: #333; text-align: center; margin-bottom: 24px; }
     
-    const btn = document.getElementById('submitBtn');
-    const name = document.getElementById('name').value.trim();
-    const message = document.getElementById('message').value.trim();
+    .card { background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 24px; }
+    
+    .input-group { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: #495057; }
+    input[type="text"], textarea { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 8px; font-size: 14px; }
+    textarea { height: 90px; resize: vertical; }
+    
+    button { width: 100%; padding: 14px; background-color: #228be6; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+    button:hover { background-color: #1c7ed6; }
+    button:disabled { background-color: #adb5bd; cursor: not-allowed; }
+    
+    .msg-item { border-bottom: 1px solid #f1f3f5; padding: 14px 0; }
+    .msg-item:last-child { border-bottom: none; }
+    .msg-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .msg-name { font-weight: bold; color: #212529; }
+    .msg-date { font-size: 12px; color: #868e96; }
+    .msg-body { font-size: 14px; color: #343a40; white-space: pre-wrap; line-height: 1.5; }
+    
+    #loading { text-align: center; color: #868e96; font-size: 14px; padding: 20px 0; }
+  </style>
+</head>
+<body>
 
-    if (!name || !message) return;
+  <h2>📖 실시간 방명록</h2>
 
-    btn.disabled = true;
-    btn.innerText = '저장 중...';
+  <!-- 작성 폼 -->
+  <div class="card">
+    <form id="guestbookForm" onsubmit="handleFormSubmit(event)">
+      <div class="input-group">
+        <label for="name">이름</label>
+        <input type="text" id="name" required placeholder="이름을 입력하세요">
+      </div>
+      <div class="input-group">
+        <label for="message">메시지</label>
+        <textarea id="message" required placeholder="방명록을 남겨주세요..."></textarea>
+      </div>
+      <button type="submit" id="submitBtn">방명록 남기기</button>
+    </form>
+  </div>
 
-    try {
-      const response = await fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ name: name, message: message }),
-        redirect: "follow"
-      });
+  <!-- 목록 뷰 -->
+  <div class="card">
+    <h3>방명록 목록</h3>
+    <div id="loading">목록을 불러오는 중...</div>
+    <div id="messageList"></div>
+  </div>
 
-      const result = await response.json();
+  <script>
+    // ⚠️ 구글 앱스 스크립트 웹 앱 배포 URL로 교체해 주세요.
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyvNvNmTi2ZAECH3hrwNVsRZkIbIgF-HAA7GE3RcQjmGTSe4l15HytFD5qBBkd7kaha/exec';
 
-      if (result.status === 'success') {
-        document.getElementById('guestbookForm').reset();
-        loadMessages();
-      } else {
-        alert('저장 실패: ' + (result.message || '알 수 없는 오류'));
+    window.onload = function() {
+      loadMessages();
+    };
+
+    // 방명록 목록 불러오기 (GET)
+    async function loadMessages() {
+      const loading = document.getElementById('loading');
+      const listDiv = document.getElementById('messageList');
+      loading.style.display = 'block';
+
+      try {
+        const response = await fetch(GAS_WEB_APP_URL);
+        const result = await response.json();
+
+        loading.style.display = 'none';
+        listDiv.innerHTML = '';
+
+        if (result.status === 'success' && result.data.length > 0) {
+          result.data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'msg-item';
+            div.innerHTML = `
+              <div class="msg-header">
+                <span class="msg-name">${escapeHtml(item.name)}</span>
+                <span class="msg-date">${escapeHtml(item.date)}</span>
+              </div>
+              <div class="msg-body">${escapeHtml(item.message)}</div>
+            `;
+            listDiv.appendChild(div);
+          });
+        } else {
+          listDiv.innerHTML = '<p style="text-align:center; color:#adb5bd;">첫 방명록을 작성해보세요!</p>';
+        }
+      } catch (err) {
+        loading.innerText = '목록을 불러오는 중 오류가 발생했습니다.';
+        console.error(err);
       }
-    } catch (err) {
-      console.error("제출 오류:", err);
-      alert('전송 중 오류가 발생했습니다.');
-    } finally {
-      btn.disabled = false;
-      btn.innerText = '방명록 남기기';
     }
-  }
 
-  // 특수문자 치환 함수
-  function escapeHtml(text) {
-    if (!text) return '';
-    return String(text)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-</script>
+    // 방명록 등록 제출 (POST)
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      
+      const btn = document.getElementById('submitBtn');
+      const name = document.getElementById('name').value.trim();
+      const message = document.getElementById('message').value.trim();
+
+      if (!name || !message) return;
+
+      btn.disabled = true;
+      btn.innerText = '저장 중...';
+
+      try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // CORS 무회파용 전송 타입
+          body: JSON.stringify({ name: name, message: message })
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          document.getElementById('guestbookForm').reset();
+          loadMessages(); // 목록 실시간 갱신
+        } else {
+          alert('저장 실패: ' + result.message);
+        }
+      } catch (err) {
+        alert('전송 중 오류가 발생했습니다.');
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '방명록 남기기';
+      }
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
