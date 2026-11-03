@@ -3,13 +3,12 @@ import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/fireb
 
 // 1. Firebase 설정 (본인의 Firebase 프로젝트 값으로 변경)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAcpMxtDgfZknnaF6UcHJD6PFoQj1iskYc",
+  authDomain: "aisystem-myproject.firebaseapp.com",
+  projectId: "aisystem-myproject",
+  storageBucket: "aisystem-myproject.firebasestorage.app",
+  messagingSenderId: "932636835234",
+  appId: "1:932636835234:web:64c457e9cb49050db806fb"
 };
 
 // Firebase 초기화
