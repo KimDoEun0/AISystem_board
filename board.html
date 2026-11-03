@@ -1,20 +1,25 @@
+// ⚠️ 발급받으신 본인의 GAS 웹 앱 URL을 입력하세요.
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyvNvNmTi2ZAECH3hrwNVsRZkIbIgF-HAA7GE3RcQjmGTSe4l15HytFD5qBBkd7kaha/exec';
 
-// 1. 방명록 목록 불러오기 (GET)
+window.onload = function() {
+  loadMessages();
+};
+
+// 방명록 목록 불러오기 (GET)
 async function loadMessages() {
   const loading = document.getElementById('loading');
   const listDiv = document.getElementById('messageList');
   if (loading) loading.style.display = 'block';
 
   try {
-    // redirect: "follow"를 명시하여 GAS의 302 리다이렉트를 정상 추적합니다.
+    // redirect: "follow" 옵션 추가
     const response = await fetch(GAS_WEB_APP_URL, { redirect: "follow" });
     const result = await response.json();
 
     if (loading) loading.style.display = 'none';
     listDiv.innerHTML = '';
 
-    if (result.status === 'success' && result.data.length > 0) {
+    if (result.status === 'success' && result.data && result.data.length > 0) {
       result.data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'msg-item';
@@ -28,15 +33,15 @@ async function loadMessages() {
         listDiv.appendChild(div);
       });
     } else {
-      listDiv.innerHTML = '<p>작성된 방명록이 없습니다.</p>';
+      listDiv.innerHTML = '<p style="text-align:center; color:#adb5bd;">작성된 방명록이 없습니다.</p>';
     }
   } catch (err) {
-    console.error("목록 불러오기 오류:", err);
     if (loading) loading.innerText = '목록을 불러오는 중 오류가 발생했습니다.';
+    console.error("불러오기 에러:", err);
   }
 }
 
-// 2. 방명록 제출 (POST)
+// 방명록 등록 제출 (POST)
 async function handleFormSubmit(event) {
   event.preventDefault();
   
@@ -50,7 +55,7 @@ async function handleFormSubmit(event) {
   btn.innerText = '저장 중...';
 
   try {
-    // CORS Preflight를 피하기 위해 text/plain 타입으로 포장하여 전송합니다.
+    // CORS 회피용 text/plain 헤더 설정
     const response = await fetch(GAS_WEB_APP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -62,13 +67,13 @@ async function handleFormSubmit(event) {
 
     if (result.status === 'success') {
       document.getElementById('guestbookForm').reset();
-      loadMessages(); // 작성 후 목록 재갱신
+      loadMessages(); // 저장 성공 시 목록 다시 불러오기
     } else {
-      alert('저장 실패: ' + result.message);
+      alert('저장 실패: ' + (result.message || '알 수 없는 오류'));
     }
   } catch (err) {
-    console.error("제출 오류:", err);
-    alert('전송 중 오류가 발생했습니다. 브라우저 콘솔(F12)을 확인하세요.');
+    console.error("제출 에러:", err);
+    alert('전송 중 오류가 발생했습니다. 키보드 F12(개발자 도구) 콘솔을 확인해 보세요.');
   } finally {
     btn.disabled = false;
     btn.innerText = '방명록 남기기';
@@ -84,5 +89,3 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
-window.onload = loadMessages;
