@@ -1,148 +1,163 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, set, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// 📌 1. Firebase 설정 (싱가포르 리전 databaseURL 적용 완료)
+// ==========================================
+// 1. API 및 Firebase 설정
+// ==========================================
+// 공공데이터포털 일반 인증키 (Encoding)
+const SERVICE_KEY = '8df9681b1748b09a3badc6afff5e72bf6fba7f96507b697945782d3dcf7c4041';
+
+// Firebase 프로젝트 키 설정
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", 
+  apiKey: "AIzaSyAcpMxtDgfZknnaF6UcHJD6PFoQj1iskYc",
   authDomain: "aisystem-myproject.firebaseapp.com",
   databaseURL: "https://aisystem-myproject-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "aisystem-myproject",
-  storageBucket: "aisystem-myproject.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  storageBucket: "aisystem-myproject.firebasestorage.app",
+  messagingSenderId: "932636835234",
+  appId: "1:932636835234:web:64c457e9cb49050db806fb"
 };
 
 // Firebase 초기화
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// 📌 2. 공공데이터 API 설정
-// ⚠️ 주의: 400 에러가 계속 난다면 공공데이터포털의 "Encoding 인증키"를 넣어보세요!
-const API_KEY = "발급받은_인증키_입력"; 
-const API_URL = "https://apis.data.go.kr/B551011/KorService1/areaBasedList1";
+// 애플리케이션 상태 관리
+let currentAreaCode = '1'; // 기본 지역: 서울 (1)
+let tourList = [];
+let favorites = {};
+let currentViewMode = 'all'; // 'all' (검색) 또는 'fav' (찜 보관함)
 
-const selectEl = document.getElementById('areaCodeSelect');
-const searchBtn = document.getElementById('searchBtn');
-const tourGrid = document.getElementById('tourGrid');
-const statusMsg = document.getElementById('statusMsg');
+// DOM 요소 참조
+const areaSelect = document.getElementById('areaSelect');
+const gridContainer = document.getElementById('gridContainer');
+const loading = document.getElementById('loading');
+const btnAll = document.getElementById('btnAll');
+const btnFav = document.getElementById('btnFav');
+const favCount = document.getElementById('favCount');
+const filterBox = document.getElementById('filterBox');
 
-// 페이지 로드 시 Firebase 상태 확인
-window.addEventListener('DOMContentLoaded', loadInitialData);
-
-// [지침 1] 초기 로딩 시 Firebase에 저장된 지역 정보 확인
-async function loadInitialData() {
-  const dbRef = ref(db);
-  try {
-    const snapshot = await get(child(dbRef, 'userLastSelection'));
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      statusMsg.innerText = `마지막으로 저장된 지역(${data.areaName})의 정보입니다.`;
-      selectEl.value = data.areaCode;
-      renderItems(data.items);
-    } else {
-      statusMsg.innerText = "저장된 지역 정보가 없습니다. 지역을 선택해주세요.";
-      tourGrid.innerHTML = "";
-    }
-  } catch (error) {
-    console.error("Firebase 읽기 에러:", error);
-    statusMsg.innerText = "초기 Firebase 데이터를 불러오는데 실패했습니다.";
-    tourGrid.innerHTML = "";
-  }
-}
-
-// [지침 2] 지역 선택 및 조회 버튼 클릭 시 동작
-searchBtn.addEventListener('click', async () => {
-  const areaCode = selectEl.value;
-  const areaName = selectEl.options[selectEl.selectedIndex].text;
-
-  if (!areaCode) {
-    alert("지역을 선택해주세요.");
-    return;
-  }
-
-  statusMsg.innerText = "관광 정보를 불러오는 중...";
-
-  try {
-    // 1. 공공데이터 API 호출
-    const items = await fetchTourData(areaCode);
-    
-    // 2. 화면 표출
-    renderItems(items);
-
-    // 3. Firebase 저장
-    await saveToFirebase(areaCode, areaName, items);
-
-    statusMsg.innerText = `현재 표출 중인 지역: ${areaName} (Firebase 저장 완료)`;
-  } catch (error) {
-    console.error("최종 에러 발생:", error);
-    statusMsg.innerText = `오류 발생: ${error.message}`;
-  }
+// ==========================================
+// 2. Firebase 실시간 데이터 연동
+// ==========================================
+const favoritesRef = ref(db, 'favorites');
+onValue(favoritesRef, (snapshot) => {
+  favorites = snapshot.val() || {};
+  favCount.innerText = Object.keys(favorites).length;
+  render();
 });
 
-// 공공데이터 API Fetch 함수 (CORS 및 인증키 처리 강화)
+// ==========================================
+// 3. 한국관광공사 TourAPI 4.0 (areaBasedList2) 호출
+// ==========================================
 async function fetchTourData(areaCode) {
-  // 인증키에 포함된 % 문자가 중복 인코딩되지 않도록 encodeURI 처리
-  const cleanKey = encodeURIComponent(decodeURIComponent(API_KEY));
+  showLoading(true);
   
-  const requestUrl = `${API_URL}?serviceKey=${cleanKey}&numOfRows=12&pageNo=1&MobileOS=ETC&MobileApp=AppTest&_type=json&listYN=Y&arrange=A&areaCode=${areaCode}`;
+  // AllOrigins CORS 우회 프록시 적용
+  const targetUrl = `https://apis.data.go.kr/B551011/KorService2/areaBasedList2?serviceKey=${SERVICE_KEY}&numOfRows=20&pageNo=1&MobileOS=ETC&MobileApp=AppTest&_type=json&areaCode=${areaCode}&arrange=O`; const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
-  console.log("요청 URL:", requestUrl);
-
-  const response = await fetch(requestUrl);
-  
-  if (!response.ok) {
-    throw new Error(`API 응답 실패 (상태 코드: ${response.status})`);
-  }
-
-  const textData = await response.text();
-  
-  // 응답 데이터가 JSON이 아닌 경우 (공공데이터 오류 XML 메시지 등)
-  let data;
   try {
-    data = JSON.parse(textData);
-  } catch (e) {
-    console.error("API 응답 내용(XML/TEXT):", textData);
-    throw new Error("API에서 올바른 JSON 데이터를 반환하지 않았습니다. (콘솔 확인)");
+    const res = await fetch(proxyUrl);
+    const json = await res.json();
+    const items = json.response?.body?.items?.item || [];
+    tourList = Array.isArray(items) ? items : [items];
+  } catch (err) {
+    console.error("API 호출 에러:", err);
+    tourList = [];
+  } finally {
+    showLoading(false);
+    render();
   }
-
-  const rawItems = data.response?.body?.items?.item || [];
-  
-  return rawItems.map(item => ({
-    title: item.title,
-    addr1: item.addr1 || '주소 정보 없음',
-    image: item.firstimage || item.firstimage2 || 'https://via.placeholder.com/300x200?text=No+Image'
-  }));
 }
 
-// 화면 렌더링 함수
-function renderItems(items) {
-  tourGrid.innerHTML = "";
+// ==========================================
+// 4. 화면 UI 렌더링
+// ==========================================
+function render() {
+  gridContainer.innerHTML = '';
 
-  if (!items || items.length === 0) {
-    tourGrid.innerHTML = "<p>조회된 관광지 정보가 없습니다.</p>";
+  const displayList = currentViewMode === 'fav' 
+    ? Object.values(favorites) 
+    : tourList;
+
+  if (displayList.length === 0) {
+    gridContainer.innerHTML = `<div class="loading" style="grid-column: 1/-1;">${
+      currentViewMode === 'fav' ? '찜한 관광지가 없습니다.' : '검색 결과가 없습니다.'
+    }</div>`;
     return;
   }
 
-  items.forEach(item => {
+  displayList.forEach(item => {
+    const isFav = !!favorites[item.contentid];
+    const imageUrl = item.firstimage || item.firstimage2 || 'https://via.placeholder.com/300x200?text=No+Image';
+
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
-      <img src="${item.image}" alt="${item.title}" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+      <div class="card-img-wrapper">
+        <img class="card-img" src="${imageUrl}" alt="${item.title || ''}">
+        <button class="fav-btn">${isFav ? '❤️' : '🤍'}</button>
+      </div>
       <div class="card-body">
-        <h3 class="card-title">${item.title}</h3>
-        <p class="card-text">${item.addr1}</p>
+        <h3 class="card-title">${item.title || '명칭 없음'}</h3>
+        <p class="card-addr">📍 ${item.addr1 || '주소 정보 없음'}</p>
       </div>
     `;
-    tourGrid.appendChild(card);
+
+    // 찜하기/취소 버튼 클릭 이벤트
+    const favBtn = card.querySelector('.fav-btn');
+    favBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavorite(item);
+    });
+
+    gridContainer.appendChild(card);
   });
 }
 
-// Firebase 데이터 저장 함수
-async function saveToFirebase(areaCode, areaName, items) {
-  await set(ref(db, 'userLastSelection'), {
-    areaCode: areaCode,
-    areaName: areaName,
-    items: items,
-    updatedAt: new Date().toISOString()
-  });
+// ==========================================
+// 5. Firebase 찜 저장 / 삭제 토글 기능
+// ==========================================
+function toggleFavorite(item) {
+  const contentId = item.contentid;
+  if (favorites[contentId]) {
+    remove(ref(db, `favorites/${contentId}`)); } else { set(ref(db, `favorites/${contentId}`), {
+      contentid: item.contentid,
+      title: item.title || '명칭 없음',
+      addr1: item.addr1 || '주소 정보 없음',
+      firstimage: item.firstimage || item.firstimage2 || ''
+    });
+  }
 }
+
+function showLoading(isShowing) {
+  if (isShowing) loading.classList.remove('hidden');
+  else loading.classList.add('hidden');
+}
+
+// ==========================================
+// 6. 이벤트 리스너 설정 및 초기 실행
+// ==========================================
+areaSelect.addEventListener('change', (e) => {
+  currentAreaCode = e.target.value;
+  fetchTourData(currentAreaCode);
+});
+
+btnAll.addEventListener('click', () => {
+  currentViewMode = 'all';
+  btnAll.classList.add('active');
+  btnFav.classList.remove('active');
+  filterBox.classList.remove('hidden');
+  render();
+});
+
+btnFav.addEventListener('click', () => {
+  currentViewMode = 'fav';
+  btnFav.classList.add('active');
+  btnAll.classList.remove('active');
+  filterBox.classList.add('hidden');
+  render();
+});
+
+// 앱 시작 시 서울 데이터 기본 불러오기
+fetchTourData(currentAreaCode);
