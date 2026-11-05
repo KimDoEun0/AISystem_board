@@ -3,14 +3,16 @@ import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/1
 
 // ===== [수정 1] Firebase 설정: 콘솔 > 프로젝트 설정 > 일반에서 복사 =====
 const firebaseConfig = {
-  apiKey: "AIzaSyAcpMxtDgfZknnaF6UcHJD6PFoQj1iskYc",
-  authDomain: "aisystem-myproject.firebaseapp.com",
-  databaseURL: "https://aisystem-myproject-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  projectId: "aisystem-myproject",
-  storageBucket: "aisystem-myproject.firebasestorage.app",
-  messagingSenderId: "932636835234",
-  appId: "1:932636835234:web:64c457e9cb49050db806fb"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "YOUR_DATABASE_URL",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.firebasestorage.app",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
+
+const TOUR_API_KEY = "YOUR_DECODING_KEY";
 
 // ===== [수정 2] Tour API 디코딩 키 =====
 const TOUR_API_KEY = "8df9681b1748b09a3badc6afff5e72bf6fba7f96507b697945782d3dcf7c4041";
