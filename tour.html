@@ -3,41 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>지역별 관광지 탐색기</title>
+  <title>지역별 여행지 카드북</title>
   <link rel="stylesheet" href="style.css">
-  
-  <!-- Firebase SDK 및 메인 앱 스크립트 모듈 로드 -->
-  <script type="module" src="app.js"></script>
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1>🏞️ 지역별 관광지 탐색기</h1>
-      <div class="nav-buttons">
-        <button id="btnAll" class="active">관광지 검색</button>
-        <button id="btnFav">❤️ 찜 보관함 (<span id="favCount">0</span>)</button>
-      </div>
-    </header>
+  <header>
+    <h1>지역별 여행지 카드북</h1>
+    <p>지역을 선택하면 관광지 목록을 보여줍니다.</p>
+  </header>
 
-    <div id="filterBox" class="filter-box">
-      <label for="areaSelect">지역 선택: </label>
+  <main>
+    <section class="controls">
+      <label for="areaSelect">지역 선택</label>
       <select id="areaSelect">
-        <option value="1" selected>서울</option>
-        <option value="2">인천</option>
-        <option value="3">대전</option>
-        <option value="4">대구</option>
-        <option value="5">광주</option>
-        <option value="6">부산</option>
-        <option value="7">울산</option>
-        <option value="8">세종</option>
-        <option value="31">경기</option>
-        <option value="32">강원</option>
-        <option value="39">제주</option>
+        <option value="">-- 지역을 선택하세요 --</option>
       </select>
-    </div>
+    </section>
 
-    <div id="loading" class="loading hidden">데이터를 불러오는 중입니다...</div>
-    <div id="gridContainer" class="grid-container"></div>
-  </div>
+    <p id="status" class="status"></p>
+
+    <section id="cardList" class="card-list hidden"></section>
+  </main>
+
+  <script type="module" src="app.js"></script>
 </body>
 </html>
