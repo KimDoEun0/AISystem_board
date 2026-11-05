@@ -48,21 +48,37 @@ onValue(favoritesRef, (snapshot) => {
 });
 
 // ==========================================
-// 3. 한국관광공사 TourAPI 4.0 (areaBasedList2) 호출
+// 3. 한국관광공사 TourAPI 4.0 (areaBasedList2) 안전한 호출
 // ==========================================
 async function fetchTourData(areaCode) {
   showLoading(true);
   
   // AllOrigins CORS 우회 프록시 적용
-  const targetUrl = `https://apis.data.go.kr/B551011/KorService2/areaBasedList2?serviceKey=${SERVICE_KEY}&numOfRows=20&pageNo=1&MobileOS=ETC&MobileApp=AppTest&_type=json&areaCode=${areaCode}&arrange=O`; const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+  const targetUrl = `https://apis.data.go.kr/B551011/KorService2/areaBasedList2?serviceKey=${SERVICE_KEY}&numOfRows=20&pageNo=1&MobileOS=ETC&MobileApp=AppTest&_type=json&areaCode=${areaCode}&arrange=O`;
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
 
   try {
     const res = await fetch(proxyUrl);
+    
+    if (!res.ok) {
+      throw new Error(`네트워크 응답 오류 (HTTP Status: ${res.status})`);
+    }
+
     const json = await res.json();
+    
+    // 💡 API 예외/오류 응답 검증 (OpenAPI_ServiceResponse 체크)
+    if (json.OpenAPI_ServiceResponse) {
+      const errMsg = json.OpenAPI_ServiceResponse.cmmMsgHeader?.errMsg || '인증 오류';
+      const returnAuthMsg = json.OpenAPI_ServiceResponse.cmmMsgHeader?.returnAuthMsg || '서비스키를 확인하세요.';
+      throw new Error(`[API 오류] ${errMsg}: ${returnAuthMsg}`);
+    }
+
+    // 💡 데이터 정상 추출 (안전한 옵셔널 체이닝 및 배열 변환)
     const items = json.response?.body?.items?.item || [];
     tourList = Array.isArray(items) ? items : [items];
+
   } catch (err) {
-    console.error("API 호출 에러:", err);
+    console.error("fetchTourData 상세 에러:", err.message);
     tourList = [];
   } finally {
     showLoading(false);
