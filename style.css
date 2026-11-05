@@ -1,84 +1,130 @@
-body {
-  font-family: 'Noto Sans KR', sans-serif;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 20px;
-  background-color: #f8f9fa;
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
 }
 
-h1 {
-  text-align: center;
-  color: #333;
+body { 
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
+  background-color: #f4f6f8; 
+  color: #333; 
 }
 
-.controls {
+.container { 
+  max-width: 1000px; 
+  margin: 0 auto; 
+  padding: 20px; 
+}
+
+.header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 20px; 
+  flex-wrap: wrap; 
+  gap: 10px; 
+}
+
+.nav-buttons button { 
+  padding: 8px 16px; 
+  margin-left: 8px; 
+  border: 1px solid #007bff; 
+  background: white; 
+  color: #007bff; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  font-weight: bold; 
+}
+
+.nav-buttons button.active { 
+  background: #007bff; 
+  color: white; 
+}
+
+.filter-box { 
+  margin-bottom: 20px; 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+}
+
+.filter-box select { 
+  padding: 8px 12px; 
+  border-radius: 6px; 
+  border: 1px solid #ccc; 
+  font-size: 1rem; 
+}
+
+.grid-container { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
+  gap: 20px; 
+}
+
+.card { 
+  background: white; 
+  border-radius: 12px; 
+  overflow: hidden; 
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+  display: flex; 
+  flex-direction: column; 
+}
+
+.card-img-wrapper { 
+  position: relative; 
+  width: 100%; 
+  height: 180px; 
+}
+
+.card-img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+}
+
+.fav-btn { 
+  position: absolute; 
+  top: 10px; 
+  right: 10px; 
+  background: rgba(255,255,255,0.85); 
+  border: none; 
+  border-radius: 50%; 
+  width: 36px; 
+  height: 36px; 
+  font-size: 1.2rem; 
+  cursor: pointer; 
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 30px;
 }
 
-select, button {
-  padding: 10px 15px;
-  font-size: 16px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+.card-body { 
+  padding: 15px; 
+  flex-grow: 1; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
 }
 
-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
+.card-title { 
+  font-size: 1rem; 
+  margin-bottom: 8px; 
+  color: #2c3e50; 
 }
 
-button:hover {
-  background-color: #0056b3;
+.card-addr { 
+  font-size: 0.85rem; 
+  color: #666; 
 }
 
-.status-msg {
-  text-align: center;
-  color: #666;
-  margin-bottom: 20px;
+.loading { 
+  text-align: center; 
+  padding: 50px 0; 
+  color: #777; 
+  font-size: 1.1rem; 
 }
 
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+.hidden { 
+  display: none !important; 
 }
-
-.card {
-  background-color: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-}
-
-.card img {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  background-color: #e9ecef;
-}
-
-.card-body {
-  padding: 15px;
-  flex-grow: 1;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: bold;
-  margin: 0 0 10px 0;
-  color: #212529;
-}
-
-.card-text {
-  font-size: 13px;
-  color: #6c757d;
-  margin: 0;
-}
-
